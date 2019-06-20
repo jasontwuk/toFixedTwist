@@ -1,0 +1,149 @@
+<script src="simpletest.js"></script>
+<script>
+
+// Prototype implementation:
+
+// Function signature:
+//  function toFixedTwist(numberString)
+
+// callback parameters:
+
+// Return value:
+//  a new string with the decimal point moved over two places to the right.
+
+function toFixedTwist(value, precision){
+
+    var valueString = value.toString();
+    var deciamlMovedValue,roundedValue,resultValue;
+
+    // when precision is not between 0 and 100.
+    if(precision < 0 || precision > 100){
+        throw new RangeError('The precision should between 0 and 100.');
+    }
+
+    // when no precision
+    if(arguments.length < 2){
+        precision = 0;
+    }
+
+    // when value has no decimal
+    if(!valueString.includes('.')){
+        // add decimal at the end
+        resultValue = valueString.replace(/(\d$)/g, '$1.');
+        // add 0 after decimal
+        while(resultValue.split('.')[1].length < precision){
+            resultValue = resultValue.replace(/(\.)/g, '$10');
+        }
+        return resultValue;
+    }
+
+    // when precision greater than value's decimal number length
+    if (valueString.split('.')[1].length < precision){
+        // add 0 after the last decimal number
+        while(valueString.split('.')[1].length < precision){
+            valueString = valueString.replace(/(\d)$/g, '$10');
+        }
+        return valueString;
+    }
+
+    // move decimal point to right by "precision" number
+    deciamlMovedValue = valueString.replace(new RegExp("(\\.)(\\d{" + precision + "})", "g"), '$2$1');
+
+    // round the deciamlMovedValue(from string to number), then turn it to string again
+    roundedValue = Math.round(deciamlMovedValue).toString();
+
+    // when roundedValue is 0 & precision is greater than 0
+    if(roundedValue === "0" && precision > 0){
+        // add decimal at the end
+        resultValue = roundedValue.replace(/(\d$)/g, '$1.');
+        // add 0 after decimal
+        while(resultValue.split('.')[1].length < precision){
+            resultValue = resultValue.replace(/(\.)/g, '$10');
+        }
+    // when roundedValue has no decimal & precision is greater than 0
+    } else if(!roundedValue.includes('.') && precision > 0){
+        // add decimal point and move it to left by "precision" number
+        resultValue = roundedValue.replace(new RegExp("(\\d{" + precision + "}$)", "g"), '.$1');
+        if(resultValue.split('.')[0] === "" || resultValue.split('.')[0] === "-"){
+            resultValue = resultValue.replace(/(\.)/g, '0$1');
+        }
+    // when roundedValue has decimal
+    } else {
+        // move decimal point to right by "precision" number
+        resultValue = roundedValue.replace(new RegExp("(\\d{" + precision + "})(\\.)", "g"), '$2$1');
+    }
+
+    return resultValue;
+};
+
+tests({
+    "(1) It should work when no precision.": function() {
+        eq(toFixedTwist(0.004), '0');
+        eq(toFixedTwist(1.005), '1');
+        eq(toFixedTwist(0.615), '1');
+        eq(toFixedTwist(10.235), '10');
+        eq(toFixedTwist(123.456), '123');
+    },
+    "(2) It should work when require 1 decimal numbers.": function() {
+        eq(toFixedTwist(0.004, 1), '0.0');
+        eq(toFixedTwist(1.005, 1), '1.0');
+        eq(toFixedTwist(0.615, 1), '0.6');
+        eq(toFixedTwist(10.235, 1), '10.2');
+        eq(toFixedTwist(123.456, 1), '123.5');
+    },
+    "(3) It should work when require 2 decimal numbers.": function() {
+        eq(toFixedTwist(0.004, 2), '0.00');
+        eq(toFixedTwist(1.005, 2), '1.01');
+        eq(toFixedTwist(0.615, 2), '0.62');
+        eq(toFixedTwist(10.235, 2), '10.24');
+        eq(toFixedTwist(123.456, 2), '123.46');
+    },
+    "(4) It should work when require more than 2 decimal numbers.": function() {
+        eq(toFixedTwist(1.002005, 4), '1.0020');
+        eq(toFixedTwist(1.002005, 5), '1.00201');
+    },
+    "(5) It should work when negative numbers.": function() {
+        eq(toFixedTwist(-20.5, 0), '-20');
+        eq(toFixedTwist(-20.51, 0), '-21');
+        eq(toFixedTwist(-20.05, 1), '-20.0');
+        eq(toFixedTwist(-20.051, 1), '-20.1');
+        eq(toFixedTwist(-20.005, 2), '-20.00');
+        eq(toFixedTwist(-20.0051, 2), '-20.01');
+        eq(toFixedTwist(-0.615, 2), '-0.61');
+    },
+    "(6) It should work when no decimal in numbers.": function() {
+        eq(toFixedTwist(123, 2), '123.00');
+    },
+    "(7) It should work when use exponent.": function() {
+        eq(toFixedTwist(10.235e+5, 2), '1023500.00');
+    },
+    "(8) It should work when required decimal number is greater than the provided decimal number.": function () {
+        eq(toFixedTwist(0.003, 5), '0.00300');
+        eq(toFixedTwist(1.005, 5), '1.00500');
+        eq(toFixedTwist(12345.6789, 5), '12345.67890');
+        eq(toFixedTwist(12345.6789, 6), '12345.678900');
+        eq(toFixedTwist(12345.6789, 7), '12345.6789000');
+        eq(toFixedTwist(12345.6789, 8), '12345.67890000');
+        eq(toFixedTwist(12345.6789, 9), '12345.678900000');
+        eq(toFixedTwist(12345.6789, 10), '12345.6789000000');
+    },
+    "(9) It should throw RangeError when precision is not between 0 and 100.": function () {
+        var isRangeError = false;
+        try {
+            toFixedTwist(12345.6789, -1);
+        } catch(e) {
+            isRangeError = (e instanceof RangeError);
+        }
+        eq(isRangeError, true);
+        
+        var isRangeError = false;
+        try {
+            toFixedTwist(12345.6789, 150);
+        } catch(e) {
+            isRangeError = (e instanceof RangeError);
+        }
+        eq(isRangeError, true);
+    }
+});
+
+</script>
